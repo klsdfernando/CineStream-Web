@@ -186,6 +186,22 @@ function ThemeIcon({ theme }) {
   );
 }
 
+function MenuIcon({ isOpen }) {
+  if (isOpen) {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6.78 5.72A1 1 0 0 1 8.2 5.72L12 9.52L15.8 5.72A1 1 0 0 1 17.22 7.14L13.42 10.94L17.22 14.74A1 1 0 1 1 15.8 16.16L12 12.36L8.2 16.16A1 1 0 0 1 6.78 14.74L10.58 10.94L6.78 7.14A1 1 0 0 1 6.78 5.72Z" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4.75 6.5A1 1 0 0 1 5.75 5.5H18.25A1 1 0 1 1 18.25 7.5H5.75A1 1 0 0 1 4.75 6.5ZM4.75 12A1 1 0 0 1 5.75 11H18.25A1 1 0 1 1 18.25 13H5.75A1 1 0 0 1 4.75 12ZM4.75 17.5A1 1 0 0 1 5.75 16.5H18.25A1 1 0 1 1 18.25 18.5H5.75A1 1 0 0 1 4.75 17.5Z" />
+    </svg>
+  );
+}
+
 function ScreenshotCard({ shot }) {
   const [hasImage, setHasImage] = useState(true);
 
@@ -213,6 +229,7 @@ export default function App() {
     return initialTheme;
   });
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const nextTheme = theme === "dark" ? "light" : "dark";
 
   useEffect(() => {
@@ -288,6 +305,17 @@ export default function App() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth > 760) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   const orbOffset = scrollProgress * 110;
 
   return (
@@ -302,11 +330,16 @@ export default function App() {
           <span>CineStream</span>
         </a>
         <div className="topbar-actions">
-          <nav>
-            <a href="#features">Features</a>
-            <a href="#preview">Preview</a>
-            <a href="#download">Download</a>
-          </nav>
+          <button
+            type="button"
+            className="menu-toggle"
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-controls="main-nav"
+            aria-expanded={mobileMenuOpen}
+          >
+            <MenuIcon isOpen={mobileMenuOpen} />
+          </button>
           <button
             type="button"
             className="theme-toggle"
@@ -318,6 +351,17 @@ export default function App() {
             <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
           </button>
         </div>
+        <nav id="main-nav" className={`main-nav ${mobileMenuOpen ? "is-open" : ""}`}>
+          <a href="#features" onClick={() => setMobileMenuOpen(false)}>
+            Features
+          </a>
+          <a href="#preview" onClick={() => setMobileMenuOpen(false)}>
+            Preview
+          </a>
+          <a href="#download" onClick={() => setMobileMenuOpen(false)}>
+            Download
+          </a>
+        </nav>
       </header>
 
       <section className="hero section-panel reveal-up is-visible" id="top">
