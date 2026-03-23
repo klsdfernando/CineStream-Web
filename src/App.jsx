@@ -1,0 +1,367 @@
+import { useEffect, useState } from "react";
+
+const THEME_STORAGE_KEY = "cinestream-theme";
+const publicAsset = (path) => `${import.meta.env.BASE_URL}${path}`;
+
+function getInitialTheme() {
+  if (typeof window === "undefined") {
+    return "light";
+  }
+
+  const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+  if (savedTheme === "dark" || savedTheme === "light") {
+    return savedTheme;
+  }
+
+  return "light";
+}
+
+const downloadOptions = [
+  {
+    platform: "Windows",
+    version: "Windows 10+",
+    downloads: [
+      {
+        label: "Setup Installer (.exe)",
+        filename: "CineStream-Setup-1.4.1.exe",
+        href: "#"
+      },
+      {
+        label: "Portable (.exe)",
+        filename: "CineStream-1.4.1.exe",
+        href: "#"
+      }
+    ]
+  },
+  {
+    platform: "macOS",
+    version: "Apple Silicon / Intel",
+    downloads: [
+      {
+        label: "Apple Silicon DMG",
+        filename: "CineStream-1.4.1-arm64.dmg",
+        href: "#"
+      },
+      {
+        label: "Apple Silicon ZIP",
+        filename: "CineStream-1.4.1-arm64-mac.zip",
+        href: "#"
+      }
+    ]
+  },
+  {
+    platform: "Linux",
+    version: "Ubuntu, Debian, Arch",
+    downloads: [
+      {
+        label: "Universal AppImage",
+        filename: "CineStream-1.4.1.AppImage",
+        href: "#"
+      },
+      {
+        label: "Debian/Ubuntu DEB",
+        filename: "cinestream_1.4.1_amd64.deb",
+        href: "#"
+      }
+    ]
+  }
+];
+
+const keyFeatures = [
+  "Massive movie, TV series, and anime catalog",
+  "Advanced search with practical filters",
+  "Offline downloads for supported content",
+  "Ad-free experience from start to finish",
+  "Fast desktop performance on all major OS",
+  "Clean interface built for binge sessions"
+];
+
+const techStack = [
+  "Electron",
+  "JavaScript",
+  "Fastify",
+  "SQLite",
+  "TMDB API",
+  "WebTorrent"
+];
+
+const screenshots = [
+  {
+    title: "Home Experience",
+    description: "Trending, popular, and top-rated rows in a clean cinematic layout.",
+    src: publicAsset("assets/screenshots/home-ui.png"),
+    alt: "CineStream home page screenshot"
+  },
+  {
+    title: "Discover and Filter",
+    description: "Genre filters and sorting controls built for fast discovery.",
+    src: publicAsset("assets/screenshots/discover-ui.png"),
+    alt: "CineStream discover page screenshot"
+  },
+  {
+    title: "Title Details",
+    description: "Focused watch page with story line, cast, and quick actions.",
+    src: publicAsset("assets/screenshots/details-ui.png"),
+    alt: "CineStream title details page screenshot"
+  }
+];
+
+function LogoMark({ className = "" }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 160 160"
+      aria-label="CineStream logo"
+      role="img"
+    >
+      <defs>
+        <linearGradient id="cs-accent" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="var(--logo-accent-start)" />
+          <stop offset="100%" stopColor="var(--logo-accent-end)" />
+        </linearGradient>
+        <filter id="cs-glow">
+          <feGaussianBlur stdDeviation="3.8" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      <rect
+        x="8"
+        y="8"
+        width="144"
+        height="144"
+        rx="36"
+        fill="var(--logo-bg)"
+        stroke="var(--logo-stroke)"
+      />
+      <g filter="url(#cs-glow)" stroke="url(#cs-accent)" strokeWidth="8" fill="none">
+        <path d="M109 42A44 44 0 1 0 109 118" strokeLinecap="round" />
+        <path d="M61 52V108" strokeLinecap="round" />
+        <path d="M72 56L109 80L72 104Z" strokeLinejoin="round" />
+      </g>
+    </svg>
+  );
+}
+
+function PlatformIcon({ platform }) {
+  if (platform === "Windows") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 4L11 3V11H3V4ZM13 2.75L21 1.5V11H13V2.75ZM3 13H11V21L3 20V13ZM13 13H21V22.5L13 21.25V13Z" />
+      </svg>
+    );
+  }
+
+  if (platform === "macOS") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M16.4 12.1C16.4 9.8 18.3 8.8 18.4 8.7C17.4 7.2 15.8 7 15.3 7C13.9 6.9 12.5 7.8 11.8 7.8C11.1 7.8 10 7 8.9 7C6.6 7 4.5 8.9 4.5 12.4C4.5 13.7 4.7 15.1 5.3 16.5C6.1 18.5 7.2 20.7 8.8 20.6C9.8 20.6 10.3 19.9 11.5 19.9C12.7 19.9 13.1 20.6 14.2 20.6C15.8 20.6 16.8 18.6 17.5 16.6C18 15.3 18.2 14 18.2 14C18.2 14 16.4 13.3 16.4 12.1Z" />
+        <path d="M14.4 5.7C15 5 15.4 4.1 15.3 3.2C14.4 3.3 13.4 3.8 12.8 4.5C12.2 5.2 11.8 6.1 11.9 7C12.9 7.1 13.8 6.5 14.4 5.7Z" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M9.4 18L12.1 13.4H3.2L8.4 5.9H14.6L11.9 10.5H20.8L15.6 18H9.4Z" />
+    </svg>
+  );
+}
+
+function ThemeIcon({ theme }) {
+  if (theme === "dark") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 4.25A1 1 0 0 1 13 5.25V6.3A1 1 0 0 1 11 6.3V5.25A1 1 0 0 1 12 4.25ZM6.73 6.14A1 1 0 0 1 8.14 6.14L8.89 6.89A1 1 0 1 1 7.48 8.3L6.73 7.55A1 1 0 0 1 6.73 6.14ZM17.27 6.14A1 1 0 0 1 17.27 7.55L16.52 8.3A1 1 0 1 1 15.11 6.89L15.86 6.14A1 1 0 0 1 17.27 6.14ZM12 8.25A3.75 3.75 0 1 1 8.25 12A3.75 3.75 0 0 1 12 8.25ZM5.25 11A1 1 0 0 1 6.25 12A1 1 0 0 1 5.25 13H4.2A1 1 0 0 1 4.2 11H5.25ZM19.8 11A1 1 0 0 1 19.8 13H18.75A1 1 0 0 1 18.75 11H19.8ZM8.89 15.11A1 1 0 0 1 8.89 16.52L8.14 17.27A1 1 0 1 1 6.73 15.86L7.48 15.11A1 1 0 0 1 8.89 15.11ZM15.11 15.11A1 1 0 0 1 16.52 15.11L17.27 15.86A1 1 0 1 1 15.86 17.27L15.11 16.52A1 1 0 0 1 15.11 15.11ZM12 17.7A1 1 0 0 1 13 17.7V18.75A1 1 0 0 1 11 18.75V17.7A1 1 0 0 1 12 17.7Z" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M14.77 4.75A1 1 0 0 1 15.75 5.97C15.73 6.07 15.72 6.17 15.72 6.28C15.72 10.04 18.76 13.08 22.52 13.08C22.63 13.08 22.73 13.07 22.83 13.05A1 1 0 0 1 24.04 14.06A9.96 9.96 0 1 1 14.77 4.75ZM13.67 7.03A7.96 7.96 0 1 0 20.96 14.3A8.77 8.77 0 0 1 13.67 7.03Z" />
+    </svg>
+  );
+}
+
+function ScreenshotCard({ shot }) {
+  const [hasImage, setHasImage] = useState(true);
+
+  return (
+    <article className="shot-card">
+      <div className="shot-media">
+        {hasImage ? (
+          <img src={shot.src} alt={shot.alt} onError={() => setHasImage(false)} loading="lazy" />
+        ) : (
+          <div className="shot-fallback">Add screenshot file in /public/assets/screenshots</div>
+        )}
+      </div>
+      <h3>{shot.title}</h3>
+      <p>{shot.description}</p>
+    </article>
+  );
+}
+
+export default function App() {
+  const [theme, setTheme] = useState(() => {
+    const initialTheme = getInitialTheme();
+    if (typeof document !== "undefined") {
+      document.documentElement.setAttribute("data-theme", initialTheme);
+    }
+    return initialTheme;
+  });
+  const nextTheme = theme === "dark" ? "light" : "dark";
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  }, [theme]);
+
+  return (
+    <main className="page-shell">
+      <div className="orb orb-left" aria-hidden="true" />
+      <div className="orb orb-right" aria-hidden="true" />
+
+      <header className="topbar">
+        <a href="#top" className="brand">
+          <LogoMark className="brand-logo" />
+          <span>CineStream</span>
+        </a>
+        <div className="topbar-actions">
+          <nav>
+            <a href="#features">Features</a>
+            <a href="#preview">Preview</a>
+            <a href="#download">Download</a>
+          </nav>
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={() => setTheme(nextTheme)}
+            aria-label={`Switch to ${nextTheme} mode`}
+            title={`Switch to ${nextTheme} mode`}
+          >
+            <ThemeIcon theme={theme} />
+            <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+          </button>
+        </div>
+      </header>
+
+      <section className="hero section-panel" id="top">
+        <LogoMark className="hero-logo" />
+        <p className="hero-badge">Version 1.4.1</p>
+        <h1>Premium Desktop Streaming. Completely Free.</h1>
+        <p className="hero-copy">
+          CineStream is a modern desktop app for movies, TV series, and anime with smart search,
+          powerful filters, and offline downloads. It is free to use, ad-free, and available on
+          Windows, macOS, and Linux.
+        </p>
+        <div className="hero-actions">
+          <a href="#download" className="btn btn-solid">
+            Download CineStream
+          </a>
+          <a href="#preview" className="btn btn-ghost">
+            View Preview
+          </a>
+        </div>
+        <p className="hero-meta">
+          Freeware for personal use. Source code is private (not open source). Android version is
+          coming soon.
+        </p>
+      </section>
+
+      <section className="section-panel" id="download">
+        <div className="section-head">
+          <h2>Download for Desktop</h2>
+          <p>One app, three platforms, same premium experience.</p>
+        </div>
+        <div className="downloads-grid">
+          {downloadOptions.map((item) => (
+            <article className="download-card" key={item.platform}>
+              <div className="platform-mark" aria-hidden="true">
+                <PlatformIcon platform={item.platform} />
+              </div>
+              <h3>{item.platform}</h3>
+              <p className="platform-version">{item.version}</p>
+              <p className="platform-file">{item.downloads.length} files available</p>
+              <div className="download-actions">
+                {item.downloads.map((download) => (
+                  <a
+                    key={download.filename}
+                    href={download.href}
+                    className="btn btn-card"
+                    title={download.filename}
+                  >
+                    {download.label}
+                  </a>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="section-panel feature-wrap" id="features">
+        <div className="section-head">
+          <h2>Built for Serious Watchers</h2>
+          <p>Speed, scale, and comfort in one desktop experience.</p>
+        </div>
+        <div className="feature-grid">
+          {keyFeatures.map((feature) => (
+            <article key={feature} className="feature-item">
+              <span className="feature-dot" aria-hidden="true" />
+              <p>{feature}</p>
+            </article>
+          ))}
+        </div>
+        <div className="stack-panel">
+          <h3>Technology Stack</h3>
+          <div className="stack-tags">
+            {techStack.map((tool) => (
+              <span key={tool}>{tool}</span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="section-panel" id="preview">
+        <div className="section-head">
+          <h2>CineStream Preview</h2>
+          <p>Preview the interface before your first download.</p>
+        </div>
+        <div className="shots-grid">
+          {screenshots.map((shot) => (
+            <ScreenshotCard key={shot.title} shot={shot} />
+          ))}
+        </div>
+      </section>
+
+      <section className="section-panel developer-panel">
+        <div className="section-head">
+          <h2>From the Developer</h2>
+          <p>Independently crafted by Sushan Fernando.</p>
+        </div>
+        <p>
+          CineStream is designed to feel fast, clean, and reliable every day. New improvements are
+          continuously shipped, and the Android build is currently in active development.
+        </p>
+        <div className="developer-links">
+          <a href="https://sushanfer.dev/" target="_blank" rel="noreferrer">
+            Developer Website
+          </a>
+          <a href="https://github.com/klsdfernando" target="_blank" rel="noreferrer">
+            GitHub Profile
+          </a>
+        </div>
+      </section>
+
+      <footer className="footer">
+        <p>Copyright 2026 Sushan Fernando. All rights reserved.</p>
+        <p>
+          CineStream uses TMDB data but is not endorsed or certified by TMDB.
+        </p>
+      </footer>
+    </main>
+  );
+}
