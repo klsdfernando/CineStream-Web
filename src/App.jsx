@@ -24,12 +24,12 @@ const downloadOptions = [
       {
         label: "Setup Installer (.exe)",
         filename: "CineStream-Setup-1.4.1.exe",
-        href: "#"
+        href: "https://drive.google.com/uc?export=download&id=1AYbJT7ffgTc5lJqBLaLiqyvzjsDWtzBa"
       },
       {
         label: "Portable (.exe)",
         filename: "CineStream-1.4.1.exe",
-        href: "#"
+        href: "https://drive.google.com/uc?export=download&id=1uKQq57CzRu2uMi31iHOdq4Ca-CME9Jjm"
       }
     ]
   },
@@ -40,12 +40,12 @@ const downloadOptions = [
       {
         label: "Apple Silicon DMG",
         filename: "CineStream-1.4.1-arm64.dmg",
-        href: "#"
+        href: "https://drive.google.com/uc?export=download&id=1OInDir-rzWtelwvWYNPg0xiYuKh-MxtJ"
       },
       {
         label: "Apple Silicon ZIP",
         filename: "CineStream-1.4.1-arm64-mac.zip",
-        href: "#"
+        href: "https://drive.google.com/uc?export=download&id=1R6JW5ZWb-kn__vywhiXnJb0Lw5VAXg5j"
       }
     ]
   },
@@ -56,12 +56,12 @@ const downloadOptions = [
       {
         label: "Universal AppImage",
         filename: "CineStream-1.4.1.AppImage",
-        href: "#"
+        href: "https://drive.google.com/uc?export=download&id=1Z-UQ5KIEpsHtgTRmzpkQXmRhEtc7LPH3"
       },
       {
         label: "Debian/Ubuntu DEB",
         filename: "cinestream_1.4.1_amd64.deb",
-        href: "#"
+        href: "https://drive.google.com/uc?export=download&id=1ue7GR5MTXMOv7gV0FBCfPJ1IFqckIsQO"
       }
     ]
   }
@@ -212,6 +212,7 @@ export default function App() {
     }
     return initialTheme;
   });
+  const [scrollProgress, setScrollProgress] = useState(0);
   const nextTheme = theme === "dark" ? "light" : "dark";
 
   useEffect(() => {
@@ -219,12 +220,83 @@ export default function App() {
     window.localStorage.setItem(THEME_STORAGE_KEY, theme);
   }, [theme]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const updateScrollProgress = () => {
+      const scrollTop = window.scrollY || window.pageYOffset;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const nextProgress = docHeight > 0 ? Math.min(scrollTop / docHeight, 1) : 0;
+      setScrollProgress(nextProgress);
+    };
+
+    let rafId = 0;
+    const onScroll = () => {
+      if (rafId) {
+        return;
+      }
+      rafId = window.requestAnimationFrame(() => {
+        updateScrollProgress();
+        rafId = 0;
+      });
+    };
+
+    updateScrollProgress();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+
+    return () => {
+      if (rafId) {
+        window.cancelAnimationFrame(rafId);
+      }
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
+
+  useEffect(() => {
+    const revealItems = document.querySelectorAll("[data-reveal]");
+    if (!revealItems.length) {
+      return undefined;
+    }
+
+    if (!("IntersectionObserver" in window)) {
+      revealItems.forEach((item) => item.classList.add("is-visible"));
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) {
+            return;
+          }
+          entry.target.classList.add("is-visible");
+          observer.unobserve(entry.target);
+        });
+      },
+      {
+        threshold: 0.16,
+        rootMargin: "0px 0px -10% 0px"
+      }
+    );
+
+    revealItems.forEach((item) => observer.observe(item));
+
+    return () => observer.disconnect();
+  }, []);
+
+  const orbOffset = scrollProgress * 110;
+
   return (
     <main className="page-shell">
-      <div className="orb orb-left" aria-hidden="true" />
-      <div className="orb orb-right" aria-hidden="true" />
+      <div className="scroll-progress" aria-hidden="true" style={{ transform: `scaleX(${scrollProgress})` }} />
+      <div className="orb orb-left" aria-hidden="true" style={{ transform: `translateY(${orbOffset * 0.45}px)` }} />
+      <div className="orb orb-right" aria-hidden="true" style={{ transform: `translateY(${-orbOffset * 0.38}px)` }} />
 
-      <header className="topbar">
+      <header className="topbar reveal-up is-visible">
         <a href="#top" className="brand">
           <LogoMark className="brand-logo" />
           <span>CineStream</span>
@@ -248,7 +320,7 @@ export default function App() {
         </div>
       </header>
 
-      <section className="hero section-panel" id="top">
+      <section className="hero section-panel reveal-up is-visible" id="top">
         <LogoMark className="hero-logo" />
         <p className="hero-badge">Version 1.4.1</p>
         <h1>Premium Desktop Streaming. Completely Free.</h1>
@@ -271,14 +343,19 @@ export default function App() {
         </p>
       </section>
 
-      <section className="section-panel" id="download">
+      <section className="section-panel reveal-up" id="download" data-reveal>
         <div className="section-head">
           <h2>Download for Desktop</h2>
           <p>One app, three platforms, same premium experience.</p>
         </div>
         <div className="downloads-grid">
-          {downloadOptions.map((item) => (
-            <article className="download-card" key={item.platform}>
+          {downloadOptions.map((item, index) => (
+            <article
+              className="download-card reveal-up"
+              key={item.platform}
+              data-reveal
+              style={{ "--reveal-delay": `${120 + index * 90}ms` }}
+            >
               <div className="platform-mark" aria-hidden="true">
                 <PlatformIcon platform={item.platform} />
               </div>
@@ -302,20 +379,25 @@ export default function App() {
         </div>
       </section>
 
-      <section className="section-panel feature-wrap" id="features">
+      <section className="section-panel feature-wrap reveal-up" id="features" data-reveal>
         <div className="section-head">
           <h2>Built for Serious Watchers</h2>
           <p>Speed, scale, and comfort in one desktop experience.</p>
         </div>
         <div className="feature-grid">
-          {keyFeatures.map((feature) => (
-            <article key={feature} className="feature-item">
+          {keyFeatures.map((feature, index) => (
+            <article
+              key={feature}
+              className="feature-item reveal-up"
+              data-reveal
+              style={{ "--reveal-delay": `${80 + index * 45}ms` }}
+            >
               <span className="feature-dot" aria-hidden="true" />
               <p>{feature}</p>
             </article>
           ))}
         </div>
-        <div className="stack-panel">
+        <div className="stack-panel reveal-up" data-reveal style={{ "--reveal-delay": "110ms" }}>
           <h3>Technology Stack</h3>
           <div className="stack-tags">
             {techStack.map((tool) => (
@@ -325,19 +407,26 @@ export default function App() {
         </div>
       </section>
 
-      <section className="section-panel" id="preview">
+      <section className="section-panel reveal-up" id="preview" data-reveal>
         <div className="section-head">
           <h2>CineStream Preview</h2>
           <p>Preview the interface before your first download.</p>
         </div>
         <div className="shots-grid">
-          {screenshots.map((shot) => (
-            <ScreenshotCard key={shot.title} shot={shot} />
+          {screenshots.map((shot, index) => (
+            <div
+              key={shot.title}
+              className="reveal-up"
+              data-reveal
+              style={{ "--reveal-delay": `${100 + index * 70}ms` }}
+            >
+              <ScreenshotCard shot={shot} />
+            </div>
           ))}
         </div>
       </section>
 
-      <section className="section-panel developer-panel">
+      <section className="section-panel developer-panel reveal-up" data-reveal style={{ "--reveal-delay": "90ms" }}>
         <div className="section-head">
           <h2>From the Developer</h2>
           <p>Independently crafted by Sushan Fernando.</p>
